@@ -1,16 +1,28 @@
 import TelegramBot from 'node-telegram-bot-api';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
-import express from 'express'; 
+import express from 'express';
 
 dotenv.config();
 
  
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(process.env.BOT_TOKEN);
 
+ 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const BACKEND_URL = process.env.BACKEND_URL;
 
+const app = express();
+app.use(express.json());  
+
+ 
+bot.setWebHook(`${process.env.WEBHOOK_URL}/bot${process.env.BOT_TOKEN}`);
+
+ 
+app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body);  
+  res.sendStatus(200);   
+});
  
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
@@ -40,7 +52,6 @@ bot.onText(/\/start/, async (msg) => {
   }
 });
 
- 
 bot.onText(/\/balance/, async (msg) => {
   const chatId = msg.chat.id;
   const username = msg.from.username || `User${msg.from.id}`;
@@ -74,7 +85,7 @@ bot.onText(/\/balance/, async (msg) => {
     bot.sendMessage(chatId, 'An error occurred while fetching your balance. Please try again later.');
   }
 });
- 
+
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
 
@@ -89,10 +100,6 @@ To start playing, just tap the button and watch your coins grow. Happy tapping!
 
   bot.sendMessage(chatId, helpMessage);
 });
-
- 
-const app = express();
-
  
 app.get('/', (req, res) => {
   res.send('Telegram bot is running!');
